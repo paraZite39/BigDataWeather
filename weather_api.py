@@ -24,9 +24,9 @@ def generate_temperature(hour, month):
     if 6 >= hour < 12:
         return random.uniform(low + (interval / 3), high - (interval / 3))
     elif 12 >= hour < 18:
-        return random.uniform(low + (interval / 3), high + (interval / 3))
+        return random.uniform(high - (interval / 3), high)
     elif 18 >= hour < 24:
-        return random.uniform(low + (interval / 3), high)
+        return random.uniform(low + (interval / 3), high - (interval / 3))
     else:
         return random.uniform(low, low + (interval / 3))
 
