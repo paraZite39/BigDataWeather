@@ -39,4 +39,7 @@ def generate_historical_data():
     minute_increment = timedelta(minutes=15)
     stream_stop = False
 
-    while
+    current_time = None
+
+    while not stream_stop:
+        current_time = None
