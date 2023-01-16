@@ -4,7 +4,7 @@
   "description": "spark streaming app",
   "dependencies": {
     "express": "^4.10.2",
-    "kafka-node": "^0.4.0",
+    "kafka-node": "^5.0.0",
     "socket.io": "^1.4.8"
   }
 }

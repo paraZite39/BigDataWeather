@@ -1,4 +1,18 @@
-<div id='container' style="height:100%;width:100%;"></div>
+<div style="display: grid; grid-template-columns: 50fr 50fr; column-gap: 30px">
+	<div style="display: grid; grid-template-rows: 70px 350px 350px 350px; row-gap: 5px; margin-left: 50px; margin-top: 100px; background-color: '#F1F7ED'">
+		<div id="raw_title" style="text-align: center; font-size: 30px;"><p>Real-time data</p></div>
+		<div id='raw_flow_container'></div>
+		<div id='raw_temp_container'></div>
+		<div id='raw_rain_container'></div>
+	</div>
+	<div style="display: grid; grid-template-rows: 70px 350px 350px 350px 350px; row-gap: 5px; margin-left: 50px; margin-top: 100px; background-color: '#F1F7ED'">
+		<div id="raw_title" style="text-align: center; font-size: 30px;"><p>Aggregated data</p></div>
+		<div id='avg_flow_container'></div>
+		<div id='avg_temp_container'></div>
+		<div id='avg_rain_container'></div>
+		<div id='avail_container'></div>
+	</div>
+</div>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 <script src="http://code.highcharts.com/highcharts.js"></script>
 <script src="http://code.highcharts.com/modules/exporting.js"></script>
@@ -16,20 +30,19 @@
             }
         });
 
-        chart = new Highcharts.Chart({
+        raw_flow_chart = new Highcharts.Chart({
             chart: {
-		        renderTo: 'container',
-                type: 'spline',
+	        renderTo: 'raw_flow_container',
+                type: 'area',
                 animation: Highcharts.svg, // don't animate in old IE
                 marginRight: 10,
 
             },
             title: {
-                text: 'Orders Shipped In One Minute Interval'
+                text: 'Real-time Streamflow (cubic feet per second)'
             },
             xAxis: {
                 type: 'datetime',
-                tickPixelInterval: 150,
                 title: {
                     text: 'Time',
                     style: {
@@ -39,7 +52,7 @@
             },
             yAxis: {
                 title: {
-                    text: 'Total Orders Shipped',
+                    text: 'cubic feet / s',
                     style: {
                         fontWeight: 'bold'
                     }
@@ -63,7 +76,7 @@
                 enabled: true
             },
             series: [{
-                name: 'Orders Shipped',
+                name: 'Streamflow',
                 data: (function () {
                     // generate an array of random data
                     var data = [],
@@ -80,12 +93,374 @@
                 }())
             }]
         });
-        socket.on('message', function(data){
+        
+        raw_temp_chart = new Highcharts.Chart({
+            chart: {
+	        renderTo: 'raw_temp_container',
+                type: 'spline',
+                animation: Highcharts.svg, // don't animate in old IE
+                marginRight: 10,
+
+            },
+            title: {
+                text: 'Real-time temperature (degrees Celsius)'
+            },
+            xAxis: {
+                type: 'datetime',
+                tickPixelInterval: 150,
+                title: {
+                    text: 'Time',
+                    style: {
+                        fontWeight: 'bold'
+                    }
+                }
+            },
+            yAxis: {
+                title: {
+                    text: 'degrees Celsius',
+                    style: {
+                        fontWeight: 'bold'
+                    }
+                },
+                plotLines: [{
+                    value: 0,
+                    width: 1,
+                    color: '#FR5D26'
+                }]
+            },
+            tooltip: {
+                formatter: function () {
+                    return '<b>' + this.series.name + '</b><br/>' +
+                        Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' + Highcharts.numberFormat(this.y, 0);
+                }
+            },
+            legend: {
+                enabled: true
+            },
+            exporting: {
+                enabled: true
+            },
+            series: [{
+                name: 'Temperature',
+                data: (function () {
+                    // generate an array of random data
+                    var data = [],
+                        time = (new Date()).getTime(),
+                        i;
+
+                    for (i = -3; i <= 0; i += 1) {
+                        data.push({
+                            x: time + i * 1000,
+                            y: 0
+                        });
+                    }
+                    return data;
+                }())
+            }]
+        });
+        
+        raw_rain_chart = new Highcharts.Chart({
+            chart: {
+	        renderTo: 'raw_rain_container',
+                type: 'spline',
+                animation: Highcharts.svg, // don't animate in old IE
+                marginRight: 10,
+
+            },
+            title: {
+                text: 'Real-time rainfall (inches per day)'
+            },
+            xAxis: {
+                type: 'datetime',
+                tickPixelInterval: 150,
+                title: {
+                    text: 'Time',
+                    style: {
+                        fontWeight: 'bold'
+                    }
+                }
+            },
+            yAxis: {
+                title: {
+                    text: 'inches / 24h',
+                    style: {
+                        fontWeight: 'bold'
+                    }
+                },
+                plotLines: [{
+                    value: 0,
+                    width: 1,
+                    color: '#B5DEAD'
+                }]
+            },
+            tooltip: {
+                formatter: function () {
+                    return '<b>' + this.series.name + '</b><br/>' +
+                        Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' + Highcharts.numberFormat(this.y, 0);
+                }
+            },
+            legend: {
+                enabled: true
+            },
+            exporting: {
+                enabled: true
+            },
+            series: [{
+                name: 'Rainfall',
+                data: (function () {
+                    // generate an array of random data
+                    var data = [],
+                        time = (new Date()).getTime(),
+                        i;
+
+                    for (i = -3; i <= 0; i += 1) {
+                        data.push({
+                            x: time + i * 1000,
+                            y: 0
+                        });
+                    }
+                    return data;
+                }())
+            }]
+        });
+        
+        socket.on('raw_message', function(data){
             data = JSON.parse(data);
-            if (data[0] === 'shipped') {
-                chart.series[0].addPoint([(new Date()).getTime(), data[1]], true, true);
-                chart.redraw();
-            }
+	    raw_flow_chart.series[0].addPoint([new Date(data['timestamp']), data['flow']], true, true);
+	    raw_flow_chart.redraw();
+	    raw_temp_chart.series[0].addPoint([(new Date()).getTime(), data['temp']], true, true);
+	    raw_temp_chart.redraw();
+	    raw_rain_chart.series[0].addPoint([(new Date()).getTime(), data['rain']], true, true);
+	    raw_rain_chart.redraw();
+        });
+        
+        avg_flow_chart = new Highcharts.Chart({
+            chart: {
+	        renderTo: 'avg_flow_container',
+                type: 'bar',
+                animation: Highcharts.svg, // don't animate in old IE
+                marginRight: 10,
+
+            },
+            title: {
+                text: 'Average streamflow (last 30 minutes)'
+            },
+            xAxis: {
+                type: 'category',
+            },
+            yAxis: {
+                title: {
+                    text: 'cubic feet / s',
+                    style: {
+                        fontWeight: 'bold'
+                    }
+                },
+            },
+            exporting: {
+                enabled: true
+            },
+            series: [{
+                name: 'Streamflow',
+                data: []
+            }]
+        });
+        
+        avg_temp_chart = new Highcharts.Chart({
+            chart: {
+	        renderTo: 'avg_temp_container',
+                type: 'spline',
+                animation: Highcharts.svg, // don't animate in old IE
+                marginRight: 10,
+
+            },
+            title: {
+                text: 'Average temperature (last 30 minutes)'
+            },
+            xAxis: {
+                type: 'datetime',
+                tickPixelInterval: 150,
+                title: {
+                    text: 'Time',
+                    style: {
+                        fontWeight: 'bold'
+                    }
+                }
+            },
+            yAxis: {
+                title: {
+                    text: 'degrees Celsius',
+                    style: {
+                        fontWeight: 'bold'
+                    }
+                },
+                plotLines: [{
+                    value: 0,
+                    width: 1,
+                    color: '#B5DEAD'
+                }]
+            },
+            tooltip: {
+                formatter: function () {
+                    return '<b>' + this.series.name + '</b><br/>' +
+                        Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' + Highcharts.numberFormat(this.y, 0);
+                }
+            },
+            legend: {
+                enabled: true
+            },
+            exporting: {
+                enabled: true
+            },
+            series: [{
+                name: 'Temperature',
+                data: null
+            }]
+        });
+        
+        avg_rain_chart = new Highcharts.Chart({
+            chart: {
+	        renderTo: 'avg_rain_container',
+                type: 'spline',
+                animation: Highcharts.svg, // don't animate in old IE
+                marginRight: 10,
+
+            },
+            title: {
+                text: 'Average rainfall (last 30 minutes)'
+            },
+            xAxis: {
+                type: 'datetime',
+                tickPixelInterval: 150,
+                title: {
+                    text: 'Time',
+                    style: {
+                        fontWeight: 'bold'
+                    }
+                }
+            },
+            yAxis: {
+                title: {
+                    text: 'inches / 24h',
+                    style: {
+                        fontWeight: 'bold'
+                    }
+                },
+                plotLines: [{
+                    value: 0,
+                    width: 1,
+                    color: '#B5DEAD'
+                }]
+            },
+            tooltip: {
+                formatter: function () {
+                    return '<b>' + this.series.name + '</b><br/>' +
+                        Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' + Highcharts.numberFormat(this.y, 0);
+                }
+            },
+            legend: {
+                enabled: true
+            },
+            exporting: {
+                enabled: true
+            },
+            series: [{
+                name: 'Rainfall',
+                data: (function () {
+                    // generate an array of random data
+                    var data = [],
+                        time = (new Date()).getTime(),
+                        i;
+
+                    for (i = -3; i <= 0; i += 1) {
+                        data.push({
+                            x: time + i * 1000,
+                            y: 0
+                        });
+                    }
+                    return data;
+                }())
+            }]
+        });
+        
+        socket.on('avg_message', function(data){
+            data = JSON.parse(data);
+    	    avg_flow_chart.series[0].addPoint([data['window']['end'], data['avg(flow)']], true, true);
+	    avg_flow_chart.redraw();
+	    avg_temp_chart.series[0].addPoint([(data['window']), data['avg(temp)']], true, true);
+	    avg_temp_chart.redraw();
+	    avg_rain_chart.series[0].addPoint([(new Date()).getTime(), data['avg(rain)']], true, true);
+	    avg_rain_chart.redraw();
+        });
+        
+        avail_chart = new Highcharts.Chart({
+            chart: {
+	        renderTo: 'avail_container',
+                type: 'spline',
+                animation: Highcharts.svg, // don't animate in old IE
+                marginRight: 10,
+
+            },
+            title: {
+                text: 'Server availability'
+            },
+            xAxis: {
+                type: 'datetime',
+                tickPixelInterval: 150,
+                title: {
+                    text: 'Time',
+                    style: {
+                        fontWeight: 'bold'
+                    }
+                }
+            },
+            yAxis: {
+                title: {
+                    text: 'availability',
+                    style: {
+                        fontWeight: 'bold'
+                    }
+                },
+                plotLines: [{
+                    value: 0,
+                    width: 1,
+                    color: '#B5DEAD'
+                }]
+            },
+            tooltip: {
+                formatter: function () {
+                    return '<b>' + this.series.name + '</b><br/>' +
+                        Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' + Highcharts.numberFormat(this.y, 0);
+                }
+            },
+            legend: {
+                enabled: true
+            },
+            exporting: {
+                enabled: true
+            },
+            series: [{
+                name: 'Availability',
+                data: (function () {
+                    // generate an array of random data
+                    var data = [],
+                        time = (new Date()).getTime(),
+                        i;
+
+                    for (i = -3; i <= 0; i += 1) {
+                        data.push({
+                            x: time + i * 1000,
+                            y: 0
+                        });
+                    }
+                    return data;
+                }())
+            }]
+        });
+        
+        socket.on('avail_message', function(data){
+            data = JSON.parse(data);
+    	    avail_chart.series[0].addPoint([(new Date()).getTime(), Math.min((data['count'] / 360) * 100, 100)], true, true);
+	    avail_chart.redraw();
         });
     });
 </script>
