@@ -33,13 +33,19 @@ stream_schema = StructType([
 stream = df.select(from_json(col("value").cast("string"), stream_schema).alias("parsed_values"))
 stream_data = stream.select("parsed_values.*")
 
-windowedAvg = stream_data.withWatermark("timestamp", "10 minutes").groupBy(
+windowedAvg = stream_data.withWatermark("timestamp", "30 minutes").groupBy(
 	window(stream_data.timestamp, "10 minutes")
-).avg().writeStream.outputMode("complete").format("console").start()
+).avg()
 
 windowedAvailability = stream_data.withWatermark("timestamp", "30 minutes").groupBy(
 	window(stream_data.timestamp, "30 minutes")
-).count().writeStream.outputMode("complete").format("console").start()
+).count()
 
-windowedAvg.awaitTermination()
-windowedAvailability.awaitTermination()
+
+rawQuery = stream_data.withColumn('value', to_json(struct(*stream_data.columns), options={"ignoreNullFields":False})).select("value").writeStream.format("kafka").option("kafka.bootstrap.servers", "localhost:9092").option("checkpointLocation", "~/kafka-checkpoint/raw/").option("topic", "real_time_viz_raw").start()
+
+avgQuery = windowedAvg.withColumn('value', to_json(struct(*windowedAvg.columns), options={"ignoreNullFields":False})).select("value").writeStream.outputMode("complete").format("kafka").option("kafka.bootstrap.servers", "localhost:9092").option("checkpointLocation", "~/kafka-checkpoint/avg/").option("topic", "real_time_viz_avg").start()
+						  
+availabilityQuery = windowedAvailability.withColumn('value', to_json(struct(*windowedAvailability.columns), options={"ignoreNullFields":False})).select("value").writeStream.outputMode("complete").format("kafka").option("kafka.bootstrap.servers", "localhost:9092").option("checkpointLocation", "~/kafka-checkpoint/avail/").option("topic", "real_time_viz_avail").start()
+
+spark.streams.awaitAnyTermination()
